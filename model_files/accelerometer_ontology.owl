@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE rdf:RDF [
+    <!ENTITY owl "http://www.w3.org/2002/07/owl#" >
+    <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
+    <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
+    <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
+    <!ENTITY acce "http://isi.edu/integration/karma/ontologies/model/accelerometer#" >
+]>
+
+<rdf:RDF 
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:acce="http://isi.edu/integration/karma/ontologies/model/accelerometer#">
+     
+    <owl:Ontology rdf:about="http://en.wikipedia.org/wiki/Accelerometer">
+        <rdfs:label>Accelerometer</rdfs:label>
+        <owl:versionInfo>1.0</owl:versionInfo>
+        <rdfs:comment>An accelerometer is a device that measures proper acceleration.</rdfs:comment>
+    </owl:Ontology>
+    
+    <owl:DatatypeProperty rdf:about="&acce;Timestamp">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;Speed">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;Accuracy">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;Acc_Magnitude">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;DFT_E1">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;DFT_E12">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;DFT_E3">
+        <rdfs:domain rdf:resource="&acce;Input"/>
+        <rdfs:range rdf:resource="&xsd;double"/>
+    </owl:DatatypeProperty>
+    
+    <owl:DatatypeProperty rdf:about="&acce;Mode">
+        <rdfs:domain rdf:resource="&acce;Output"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+    </owl:DatatypeProperty>
+    
+
+    <owl:Class rdf:about="&acce;AccelerometerReading"/>
+    
+    <owl:Class rdf:about="&acce;Input">
+	    <rdfs:subClassOf rdf:resource="&acce;AccelerometerReading"/>
+    </owl:Class>
+    
+    <owl:Class rdf:about="&acce;Output">
+	    <rdfs:subClassOf rdf:resource="&acce;AccelerometerReading"/>
+    </owl:Class>
+    
+</rdf:RDF>    
+    
