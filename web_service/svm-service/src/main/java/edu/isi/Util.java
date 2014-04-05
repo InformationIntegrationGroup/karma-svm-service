@@ -1,5 +1,6 @@
 package edu.isi;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -20,12 +21,33 @@ public class Util {
 	private static Connection conn;
 	private Logger log = Logger.getLogger(Util.class);
 	public static final String CurrentDir = System.getProperty("user.dir");
+	public static final String SQLiteDB = "services_db.sqlite";
 	
 	static {
 		try {
-			Class.forName("org.sqlite.JDBC");
-			System.out.println(CurrentDir+"/services_db.sqlite");
-			conn = DriverManager.getConnection("jdbc:sqlite:"+CurrentDir+"/services_db.sqlite");
+			// initialize the directory is not present
+			Logger log = Logger.getLogger(Util.class);
+	        File f = new File(Util.CurrentDir + "/temp_data_dm_service");
+	        if(!f.exists()) {
+	        	log.info("Creating dir:" +Util.CurrentDir + "/temp_data_dm_service");
+	        	f.mkdir();
+	        }
+	        // initialize the model directory is not present
+	        f = new File(Util.CurrentDir + "/models");
+	        if(!f.exists()) {
+	        	log.info("Creating dir:" +Util.CurrentDir + "/models");
+	        	f.mkdir();
+	        }
+	        f = new File(Util.CurrentDir + "/" + SQLiteDB);
+	        if(!f.exists()) {
+	        	log.info("Creating SQLite database:" +Util.CurrentDir + "/" + SQLiteDB);
+	        	Util.initSQLite();
+	        } else {
+	        	Class.forName("org.sqlite.JDBC");
+				System.out.println(CurrentDir+"/" + SQLiteDB);
+				conn = DriverManager.getConnection("jdbc:sqlite:"+CurrentDir+"/"+SQLiteDB);
+	        }
+			
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -35,7 +57,7 @@ public class Util {
 
 		try {
 			Class.forName("org.sqlite.JDBC");
-			conn = DriverManager.getConnection("jdbc:sqlite:"+CurrentDir+"/services_db.sqlite");
+			conn = DriverManager.getConnection("jdbc:sqlite:"+CurrentDir+"/"+SQLiteDB);
 			Statement statement = conn.createStatement();
 
 			statement.executeUpdate("CREATE TABLE \"services\" (\"Id\" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , \"Name\" TEXT NOT NULL , \"Description\" TEXT, \"Url\" TEXT)");
@@ -47,7 +69,7 @@ public class Util {
 		}
 	}
 
-	public void insertModeInfo(JSONObject json, String host, String command, String modelName, String dataFile) {
+	public void insertExecutionInfo(JSONObject json, String host, String command, String modelName, String dataFile) {
 		PreparedStatement statement;
 		try {
 			statement = conn.prepareStatement("Insert into service_executions (Host, ModelName, Key, Value) values (?, ?, ?, ?)");
@@ -134,6 +156,7 @@ public class Util {
 					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 				}
 			}
+			arr.put(obj);
 			retVal.put("models", arr);
 		
 		} catch (Exception e) {
