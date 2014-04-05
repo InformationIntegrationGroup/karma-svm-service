@@ -6,12 +6,17 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * @author shri
+ * */
 public class Util {
 	
 	public enum ModelKeys{
@@ -126,11 +131,11 @@ public class Util {
 		return false;
 	}
 	
-	public JSONObject getModelDetail() {
-		return getModelDetail(null);
+	public JSONObject getAllExecution() {
+		return getAllExecution(null);
 	}
 	
-	public JSONObject getModelDetail(String name) {
+	public JSONObject getAllExecution(String name) {
 		JSONObject retVal = new JSONObject();
 		PreparedStatement stmt;
 		try {
@@ -165,17 +170,47 @@ public class Util {
 		return retVal;
 	}
 
-//	public Connection getConnection() {
-//		if(conn == null) {
-//			try {
-//				Class.forName("org.sqlite.JDBC");
-//			} catch (Exception e) {
-//
-//			}
-//		}
-//		return conn;
-//
-//	}
-
-
+	public JSONObject getAllServices() {
+		
+		JSONObject retVal = new JSONObject();
+		PreparedStatement stmt;
+		try {
+			//stmt = conn.prepareStatement("select a1.*, a2.Id as ParamId, a2.Name as ParamName, a2.Description as ParamDesc, a2.default_value from services a1 join service_params a2 on a1.Id = a2.ServiceId order by a1.Id asc");
+			stmt = conn.prepareStatement("select * from services order by Id asc");
+			ResultSet rs = stmt.executeQuery();
+			JSONArray arr = new JSONArray();
+			List<JSONObject> services = new ArrayList<JSONObject>();
+			JSONObject obj = new JSONObject();
+			while(rs.next()) {
+				obj = new JSONObject();
+				obj.put("Id", rs.getInt("Id"));
+				obj.put("Name", rs.getString("Name"));
+				obj.put("Description", rs.getString("Description"));
+				obj.put("Url", rs.getString("Url"));
+				services.add(obj);
+			}
+			stmt = conn.prepareStatement("select * from service_params where ServiceId = ? order by Id asc");
+			for(JSONObject jObj : services) {
+				stmt.setInt(1, jObj.getInt("Id"));
+				rs = stmt.executeQuery();
+				JSONArray paramArr = new JSONArray();
+				while(rs.next()) {
+					obj = new JSONObject();
+					obj.put("Id", rs.getInt("Id"));
+					obj.put("Name", rs.getInt("Name"));
+					obj.put("Description", rs.getInt("Description"));
+					obj.put("default_value", rs.getInt("default_value"));
+					paramArr.put(obj);
+				}
+				jObj.put("params", paramArr);
+			}
+			arr.put(obj);
+			retVal.put("models", arr);
+		
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return retVal;
+		
+	}
 }
