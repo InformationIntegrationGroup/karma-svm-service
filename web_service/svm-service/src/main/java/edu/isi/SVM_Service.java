@@ -183,27 +183,6 @@ public class SVM_Service {
     
     
     @GET
-	@Path("/service/executions")
-	@Produces(MediaType.APPLICATION_JSON)
-    public Response getModelDetailByName(
-    		String data,
-    		@Context HttpHeaders headers,
-    		@DefaultValue("") @QueryParam("model_name") String model_name) {
-    	
-    	log.debug(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
-    	JSONObject json;
-    	if(model_name.trim().isEmpty()) {
-    		json = utilObj.getModelDetail();
-    	} else {
-    		json = utilObj.getModelDetail(model_name);
-    	}
-    	return Response.status(200).entity(json.toString()).build();
-    
-    }
-    
-    
-    
-    @GET
 	@Path("/test")
 	@Produces(MediaType.TEXT_PLAIN)
     public Response testingGET(
