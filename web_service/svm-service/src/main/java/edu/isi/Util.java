@@ -196,9 +196,9 @@ public class Util {
 				while(rs.next()) {
 					obj = new JSONObject();
 					obj.put("Id", rs.getInt("Id"));
-					obj.put("Name", rs.getInt("Name"));
-					obj.put("Description", rs.getInt("Description"));
-					obj.put("default_value", rs.getInt("default_value"));
+					obj.put("Name", rs.getString("Name"));
+					obj.put("Description", rs.getString("Description"));
+					obj.put("default_value", rs.getString("default_value"));
 					paramArr.put(obj);
 				}
 				jObj.put("params", paramArr);
