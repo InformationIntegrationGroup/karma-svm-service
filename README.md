@@ -7,18 +7,22 @@ This project is a rest based implementation for various machine learning service
 ## Installation and Setup ##
 System Requirements: **Java 1.6, Maven 3.0** and above.
 
-To compile the code run this from the folder of web_service/svm-service/:
-`mvn clean install`
+1. To compile the code run this from the folder of web_service/svm-service/:
+`mvn clean package`
 
-Now, to run the web service:
+2. Now deploy the webservice to tomcat / jetty / etc
 ```
-cd web_service/svm-service/
-mvn jetty:run
+cp web_service/svm-service/target/dm-service.war /location/of/the/tomcat/webapps/directory
 ```
-
-Once the server has started point your browser to **http://localhost:8080/**. To start it on a port other than 8080 (e.g. Port number 9999) 
-`mvn -Djetty.port=9999 jetty:run`
-
+3. Copy the Rscript directory to the same level/location as webapps
+```
+cp -r cp -r Rscripts/ /location/of/the/tomcat/
+```
+4. Copy the sqlite database file to the same location as webapps
+```
+cp services_db.sqlite /location/of/the/tomcat/
+```
+5. Now start the server. Once the server has started (assuming post) point your browser to **http://localhost:8080/dm-service.
 
 ## Source Code Directories ##
 The root directory contains the following:
