@@ -178,7 +178,6 @@ public class Util {
 			//stmt = conn.prepareStatement("select a1.*, a2.Id as ParamId, a2.Name as ParamName, a2.Description as ParamDesc, a2.default_value from services a1 join service_params a2 on a1.Id = a2.ServiceId order by a1.Id asc");
 			stmt = conn.prepareStatement("select * from services order by Id asc");
 			ResultSet rs = stmt.executeQuery();
-			JSONArray arr = new JSONArray();
 			List<JSONObject> services = new ArrayList<JSONObject>();
 			JSONObject obj = new JSONObject();
 			while(rs.next()) {
@@ -204,8 +203,7 @@ public class Util {
 				}
 				jObj.put("params", paramArr);
 			}
-			arr.put(obj);
-			retVal.put("models", arr);
+			retVal.put("models", services);
 		
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
