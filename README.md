@@ -90,6 +90,41 @@ The /all will fetch a list of all the available services along with their parame
 }
 ```
 
+### /dm-service/service/execution ###
+This endpoint serves meta information about all the executions of the data mining service that have been performed so far.
+It show a log of all the calls made so far, with the various paramteres.
+```
+http://localhost/dm-service/service/execution
+or 
+http://localhost/dm-service/service/execution/{model_name},
+```
+If a model_name is specific, then all the infomration about this trained model is fetched. Else all models are fetched.
+````
+{
+    "Command": "Rscripts/svmTraining.R",
+    "raw": "[1] \"/Users/shri/Downloads/jetty-distribution-9.1.0.v20131115/temp_data_dm_service/TrainData_linear_04-Apr-2014_133322136.csv\"
+    		[2] \"linear\"
+    		[3] \"C-classification\"
+    		[4] \"SVM_Model_linear_04-Apr-2014_133322130\"
+    		[1] \"modelName: \"[1] \"models/SVM_Model_linear_04-Apr-2014_133322130.RData\"Call:svm.default(x = x, y = y, type = c_type, kernel = kerneltype)Parameters: SVM-Kernel:  linear        
+    			cost:  1       
+    			gamma:  0.1428571 
+    			Number of Support Vectors:  565 ( 175 128 130 132 )
+    			Number of Classes:  4 Levels: auto bus stationary walking",
+
+    "Levels": [\"auto\",\"bus\",\"stationary\",\"walking\"],
+    "summary": "svm.default(x = x, y = y, type = c_type, kernel = kerneltype)",
+    "Number of Support Vectors": "  565",
+    "DataFile": "/Users/shri/Downloads/jetty-distribution-9.1.0.v20131115/temp_data_dm_service/TrainData_linear_04-Apr-2014_133322136.csv",
+    "Host": "[localhost:1234]",
+    "cost": "1",
+    "model_name": "SVM_Model_linear_04-Apr-2014_133322130",
+    "Number of Classes": "  4",
+    "SVM-Kernel": "linear",
+    "gamma": "0.1428571",
+    "ModelName": "SVM_Model_linear_04-Apr-2014_133322130"
+}
+````
 
 
 
