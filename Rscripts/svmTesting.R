@@ -24,11 +24,11 @@ pred <- predict(svmModel, x, decision.values = TRUE)
 #summary(svmModel)
 #attr(pred, "decision.values")[1:8,]
 
-write.table(testset, predictedFileName, sep=',', quote=TRUE)
+write.table(testset, predictedFileName, sep=',', row.names=FALSE, quote = FALSE)
 
 #plot(svm.pred)
 
-write.table(confusionMatrix,file=confusionMatrixFile, sep=',' , col.names=NA)
+write.table(confusionMatrix,file=confusionMatrixFile,sep=',',col.names=NA, quote = FALSE)
 
 accuracy <- paste("Accuracy: ",classAgreement(confusionMatrix)$diag,sep=" ")
 accuracy
