@@ -10,6 +10,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
@@ -19,8 +20,11 @@ public class Services {
 	
 	private Logger log = Logger.getLogger(Services.class.getName());
 	private Util utilObj;
-	public Services(@Context HttpHeaders headers) {
+	private UriInfo uriInfo;
+	public Services(@Context HttpHeaders headers,
+			@Context UriInfo uri) {
 		this.utilObj = new Util();
+		this.uriInfo = uri;
 	}
 	
 	
@@ -57,7 +61,7 @@ public class Services {
     		@DefaultValue("") @QueryParam("model_name") String model_name) {
     	
     	log.info(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
-    	JSONObject json = utilObj.getAllServices();
+    	JSONObject json = utilObj.getAllServices(this.uriInfo);
     	return Response.status(200).entity(json.toString()).build();
     }
 
