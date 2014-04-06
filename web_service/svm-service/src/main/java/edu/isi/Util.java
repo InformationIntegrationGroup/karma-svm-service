@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.ws.rs.core.UriInfo;
+
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,21 +22,22 @@ import org.json.JSONObject;
 public class Util {
 	
 	public enum ModelKeys{
-		ModelName, Host, Key, Value, DataFile, Command,
+		Id, ServiceUrl, Tag, Key, Value, createdOn
 	}
 
 	private static Connection conn;
 	private Logger log = Logger.getLogger(Util.class);
 	public static final String CurrentDir = System.getProperty("user.dir");
 	public static final String SQLiteDB = "services_db.sqlite";
+	public static final String DataDir = "temp_data_dm_service";
 	
 	static {
 		try {
 			// initialize the directory is not present
 			Logger log = Logger.getLogger(Util.class);
-	        File f = new File(Util.CurrentDir + "/temp_data_dm_service");
+	        File f = new File(Util.CurrentDir + "/" + DataDir);
 	        if(!f.exists()) {
-	        	log.info("Creating dir:" +Util.CurrentDir + "/temp_data_dm_service");
+	        	log.info("Creating dir:" +Util.CurrentDir + "/" + DataDir);
 	        	f.mkdir();
 	        }
 	        // initialize the model directory is not present
@@ -67,47 +70,41 @@ public class Util {
 
 			statement.executeUpdate("CREATE TABLE \"services\" (\"Id\" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , \"Name\" TEXT NOT NULL , \"Description\" TEXT, \"Url\" TEXT)");
 			statement.executeUpdate("CREATE TABLE \"service_params\" (\"Id\" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , \"Name\" TEXT NOT NULL , \"Description\" TEXT, \"ServiceId\" INTEGER NOT NULL , \"default_value\" TEXT)");
-			statement.executeUpdate("CREATE TABLE \"service_executions\" (\"Id\" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , \"Host\" TEXT, \"ModelName\" TEXT, \"Key\" TEXT, \"Value\" TEXT)");
+			statement.executeUpdate("CREATE TABLE \"service_executions\" (\"Id\" TEXT NOT NULL ,\"ServiceUrl\" TEXT DEFAULT (null) ,\"Tag\" TEXT DEFAULT (null) ,\"Key\" TEXT,\"Value\" TEXT,\"ValueType\" TEXT, \"createdOn\" DATETIME)");
 
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void insertExecutionInfo(JSONObject json, String host, String command, String modelName, String dataFile) {
+	/**
+	 * @param ExecId
+	 * @param ServiceUrl
+	 * @param tagName
+	 * @param
+	 */
+	public void insertExecutionInfo(String ExecId, String ServiceUrl, String tagName, JSONObject json) {
 		PreparedStatement statement;
 		try {
-			statement = conn.prepareStatement("Insert into service_executions (Host, ModelName, Key, Value) values (?, ?, ?, ?)");
+			statement = conn.prepareStatement("Insert into service_executions (Id, ServiceUrl, Tag, Key, Value, createdOn) values (?, ?, ?, ?, ?, datetime('now'))");
 			Iterator<String> itr = json.keys();
 			while(itr.hasNext()) {
 				String val = "";
 				String k = itr.next();
-				statement.setString(1, host);
-				statement.setString(2, modelName);
-				statement.setString(3, k);
+				statement.setString(1, ExecId);
+				statement.setString(2, ServiceUrl);
+				statement.setString(3, tagName);
+				statement.setString(4, k);
 				try {
 					val = json.getString(k);
 				} catch (Exception e) {
 					val = JSONObject.valueToString(json.get(k));
 				}
-				statement.setString(4, val);
+				statement.setString(5, val);
 				statement.addBatch();
 			}
-			if(dataFile != null ) {
-				statement.setString(1, host);
-				statement.setString(2, modelName);
-				statement.setString(3, ModelKeys.DataFile.name());
-				statement.setString(4, dataFile);
-				statement.addBatch();
-			}
-			if(command != null ) {
-				statement.setString(1, host);
-				statement.setString(2, modelName);
-				statement.setString(3, ModelKeys.Command.name());
-				statement.setString(4, command);
-				statement.addBatch();
-			}
-			log.info("Executing the batch query : " + statement.executeBatch());
+			statement.executeBatch();
+			log.info("Saved ServiceExecution Id: " + ExecId + " Url : " + ServiceUrl + " Tag: "+ tagName);
 			
 		} catch (Exception e) {
 			log.error(e);
@@ -116,7 +113,7 @@ public class Util {
 	
 	public boolean isModelNameUnique(String name) {
 		try {
-			PreparedStatement stmt = conn.prepareStatement("select distinct ModelName from service_executions where ModelName like ?");
+			PreparedStatement stmt = conn.prepareStatement("select distinct Value as model_name from service_executions where Key = 'model_name' and Value like ?");
 			stmt.setString(1, name);
 			ResultSet rs = stmt.executeQuery();
 			if(rs.next()) {
@@ -140,9 +137,9 @@ public class Util {
 		PreparedStatement stmt;
 		try {
 			if(name == null || name.trim().isEmpty()) {
-				stmt = conn.prepareStatement("select distinct * from service_executions order by ModelName asc");
+				stmt = conn.prepareStatement("select distinct * from service_executions order by createdOn, Id desc");
 			} else {
-				stmt = conn.prepareStatement("select distinct * from service_executions where ModelName like ?");
+				stmt = conn.prepareStatement("select distinct * from service_executions where Key = 'model_name' and Value like ? order by createdOn, Id desc");
 				stmt.setString(1, name);
 			}
 			ResultSet rs = stmt.executeQuery();
@@ -150,15 +147,20 @@ public class Util {
 			JSONObject obj = new JSONObject();
 			String prevModel = "";
 			while(rs.next()) {
-				if(!prevModel.equalsIgnoreCase(rs.getString(ModelKeys.ModelName.name()))) {
-					prevModel = rs.getString(ModelKeys.ModelName.name());
+				if(!prevModel.equalsIgnoreCase(rs.getString(ModelKeys.Id.name()))) {
+					prevModel = rs.getString(ModelKeys.Id.name());
 					arr.put(obj);
 					obj = new JSONObject();
 					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 				} else {
-					obj.put("Host", rs.getString("Host"));
-					obj.put(ModelKeys.ModelName.name(), rs.getString(ModelKeys.ModelName.name()));
+					
+					obj.put(ModelKeys.ServiceUrl.name(), rs.getString(ModelKeys.ServiceUrl.name()));
+					obj.put(ModelKeys.Id.name(), rs.getString(ModelKeys.Id.name()));
+					obj.put(ModelKeys.Tag.name(), rs.getString(ModelKeys.Tag.name()));
+					obj.put(ModelKeys.createdOn.name(), rs.getString(ModelKeys.createdOn.name()));
+					
 					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
+					
 				}
 			}
 			arr.put(obj);
@@ -170,7 +172,7 @@ public class Util {
 		return retVal;
 	}
 
-	public JSONObject getAllServices() {
+	public JSONObject getAllServices(UriInfo uriInfo) {
 		
 		JSONObject retVal = new JSONObject();
 		PreparedStatement stmt;
@@ -185,7 +187,7 @@ public class Util {
 				obj.put("Id", rs.getInt("Id"));
 				obj.put("Name", rs.getString("Name"));
 				obj.put("Description", rs.getString("Description"));
-				obj.put("Url", rs.getString("Url"));
+				obj.put("Url", uriInfo.getBaseUri()+rs.getString("Url"));
 				services.add(obj);
 			}
 			stmt = conn.prepareStatement("select * from service_params where ServiceId = ? order by Id asc");

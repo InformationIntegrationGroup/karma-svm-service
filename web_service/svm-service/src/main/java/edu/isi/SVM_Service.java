@@ -12,6 +12,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.UUID;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -24,7 +25,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.server.ServerConfig;
@@ -37,9 +40,12 @@ public class SVM_Service {
 
 	
 	private Util utilObj;
+	private UriInfo uriInfo;
 	
-	public SVM_Service(@Context HttpHeaders headers) {
-		utilObj = new Util();
+	public SVM_Service(@Context HttpHeaders headers, 
+			@Context UriInfo uri) {
+		this.utilObj = new Util();
+		this.uriInfo = uri;
 	}
 	
     /**
@@ -57,6 +63,10 @@ public class SVM_Service {
     		String k = itr.next();
     		log.info(k + " : " + headers.getRequestHeader(k));
     	}
+    	log.info("getAbsolutePath : " + uriInfo.getAbsolutePath().toString());
+    	log.info("getBaseUri : " + uriInfo.getBaseUri().toString());
+    	log.info("getPath : " + uriInfo.getPath().toString());
+    	
     	return Response.status(200).entity("Got here").build();
     }
     
@@ -69,9 +79,10 @@ public class SVM_Service {
     		@Context HttpHeaders headers,
     		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
     		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
-    		@DefaultValue("") @QueryParam("model_name") String model_name) {
+    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
-    	return Response.status(200).entity("Got here").build();
+    	return Response.status(200).entity("The SVM training service is invoked using a POST request. It accepts data in the POST payload").build();
     
     }
     
@@ -84,7 +95,8 @@ public class SVM_Service {
     		@Context HttpHeaders headers,
     		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
     		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
-    		@DefaultValue("") @QueryParam("model_name") String model_name) {
+    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
     	log.debug(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
     	
@@ -117,14 +129,15 @@ public class SVM_Service {
     	try {
 
     		// write the data to the disk
-    		final String inputFileName = Util.CurrentDir+"/temp_data_dm_service/"+"TrainData_" + kernel_type + "_" + sdf.format(Calendar.getInstance().getTime()) + ".csv";
-    		FileWriter writer = new FileWriter(inputFileName);
+    		final String inputFileName = "TrainData_" + kernel_type + "_" + sdf.format(Calendar.getInstance().getTime()) + ".csv";
+    		final String inputFilePath = Util.CurrentDir+"/"+Util.DataDir+"/"+inputFileName;
+    		FileWriter writer = new FileWriter(inputFilePath);
     		writer.write(data);
     		writer.flush();
     		writer.close();
-    		log.info("File created : " + inputFileName);
+    		log.info("File created : " + inputFilePath);
     		
-    		String cmd = String.format("Rscript "+Util.CurrentDir+"/Rscripts/svmTraining.R %s %s %s %s ",inputFileName, kernel_type, c_type, model_name);
+    		String cmd = String.format("Rscript "+Util.CurrentDir+"/Rscripts/svmTraining.R %s %s %s %s ",inputFilePath, kernel_type, c_type, model_name);
     		log.info(cmd);
 	    	Process pr = Runtime.getRuntime().exec(cmd);
 			
@@ -162,6 +175,8 @@ public class SVM_Service {
 					summary.put("Levels", line.split(" "));
 				} 
 				summary.put("model_name", model_name + ".RData");
+				summary.put("InputFile", inputFileName);
+				summary.put("CommandName", "Rscripts/svmTraining.R");
 			}
 			summary.put("raw", buf.toString());
 			log.info(buf.toString());
@@ -171,7 +186,8 @@ public class SVM_Service {
 				summary.put("Error", buf.toString());
 			} else {
 				log.info("Model " + model_name +" created!!");
-				utilObj.insertExecutionInfo(summary, headers.getRequestHeader("Host").toString(), "Rscripts/svmTraining.R", model_name, inputFileName);
+				utilObj.insertExecutionInfo(UUID.randomUUID().toString(), this.uriInfo.getPath(), tag_name, summary);
+				summary.put("InputFilePath", this.uriInfo.getBaseUri() + "data/csv/" + inputFileName);
 			}
 			
     	} catch (Exception e) {
@@ -188,7 +204,8 @@ public class SVM_Service {
     public Response testingGET(
     		String data,
     		@Context HttpHeaders headers,
-    		@DefaultValue("") @QueryParam("model_name") String model_name) {
+    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
     	log.info(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
     	return Response.status(200).entity("Got here").build();
@@ -202,9 +219,10 @@ public class SVM_Service {
     public Response testingPOST(
     		String data,
     		@Context HttpHeaders headers,
-    		@DefaultValue("") @QueryParam("model_name") String model_name) {
+    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
-    	log.info(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
+    	log.info(String.format("%s", headers.getRequestHeader("User-Agent")));
     	
     	
     	// get the date format for file name generation
@@ -228,30 +246,43 @@ public class SVM_Service {
     		return Response.status(200).entity(summary.toString()).build();
     	}
     	
-    	final String predictedFilePath = Util.CurrentDir+"/temp_data_dm_service/"+"Prediction_" +model_name;
-    	final String confusionMatrixFilePath = Util.CurrentDir+"/temp_data_dm_service/"+"Matrix_" +model_name;
+    	String model_name_trimmed = model_name;
+    	if(model_name.contains(".RData")) {
+    		model_name_trimmed = model_name_trimmed.substring(0, model_name_trimmed.indexOf(".RData"));
+    	}
     	
-    	// write the data to the disk
-    	final String inputFileName = Util.CurrentDir+"/temp_data_dm_service/"+"TestDataSet_" + ts + ".csv";
+    	final String predictedFileName = "Prediction_" +model_name_trimmed +".csv";
+    	final String predictedFilePath = Util.CurrentDir+"/"+Util.DataDir+"/"+predictedFileName;
+    	
+    	final String confusionMatrixFileName = "Matrix_" +model_name_trimmed +".csv";
+    	final String confusionMatrixFilePath = Util.CurrentDir+"/"+Util.DataDir+"/"+confusionMatrixFileName;
+    	
+    	final String inputFileName = "TestDataSet_" + ts + ".csv";
+    	final String inputFilePath = Util.CurrentDir+"/"+Util.DataDir+"/"+inputFileName;
+    	
     	try {
-    		
-    		FileWriter writer = new FileWriter(inputFileName);
+    		// write the data to the disk
+    		FileWriter writer = new FileWriter(inputFilePath);
     		writer.write(data);
     		writer.flush();
     		writer.close();
-    		log.info("File created : " + inputFileName);
+    		log.info("File created : " + inputFilePath);
     		
+
+    		// execute the R script
     		String cmd = String.format("Rscript "+Util.CurrentDir+"/Rscripts/svmTesting.R %s %s %s %s",
-    				inputFileName,
+    				inputFilePath,
     				Util.CurrentDir+"/models/"+model_name,
     				predictedFilePath,
     				confusionMatrixFilePath);
     		log.info(cmd);
 	    	Process pr = Runtime.getRuntime().exec(cmd);
 			
+	    	
 			BufferedReader results = new BufferedReader(new InputStreamReader(pr.getInputStream()));
 			String line = null;
 			
+			// parse the output of the Rscript
 			StringBuilder buf = new StringBuilder();
 			while((line=results.readLine()) != null) {
 				buf.append(line);
@@ -263,16 +294,24 @@ public class SVM_Service {
 					summary.put("Accuracy", line);
 				} 
 			}
-			summary.put("raw", buf.toString());
+			summary.put("raw", buf.toString());			// add the output of the rscript to the json
 			log.info(buf.toString());
 			
 			if(summary.optString("Accuracy",null) == null) {
 				summary = new JSONObject();
 				summary.put("Error", buf.toString());
 			} else {
-				summary.put("ConfusionMatrixPath", "Matrix_" +model_name);
-				summary.put("PredictionPath", "Prediction_" +model_name);
-				utilObj.insertExecutionInfo(summary, headers.getRequestHeader("Host").toString(), "svmTraining.R", model_name, inputFileName);
+				summary.put("ConfusionMatrixFileName", confusionMatrixFileName);
+				summary.put("PredictionFileName", predictedFileName);
+				summary.put("InputFileName", inputFileName);
+				summary.put("CommandName", "Rscripts/svmTraining.R");
+				utilObj.insertExecutionInfo(UUID.randomUUID().toString(), this.uriInfo.getPath(), tag_name, summary);
+				
+				// now add the urls to the get matrix and prediction file
+				summary.put("ConfusionMatrixPath", this.uriInfo.getBaseUri().toString()+"data/csv/"+confusionMatrixFileName);
+				summary.put("PredictionPath", this.uriInfo.getBaseUri().toString()+"data/csv/"+predictedFileName);
+				summary.put("TestFilePath", this.uriInfo.getBaseUri().toString()+"data/csv/"+inputFileName);
+				
 			}
 			
     	} catch (Exception e) {
@@ -281,51 +320,6 @@ public class SVM_Service {
 		
     	return Response.status(200).entity(summary.toString()).build();
 	}
-    
-//    
-//    @POST
-//	@Path("/upload_svm")
-//	@Consumes(MediaType.MULTIPART_FORM_DATA)
-//	public String uploadFile(
-//		@FormDataParam("file") InputStream uploadedInputStream,
-//		@FormDataParam("file") FormDataContentDisposition fileDetail,
-//		@QueryParam("kernel") String kernel_type) {
-// 
-//    	// get the date format for file name generation
-//    	SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy_HmsS");
-//    	String modelName = kernel_type + "_" + sdf.format(Calendar.getInstance().getTime()) + "_model";
-//    	
-//    	// write the data to the disk
-//    	String inputFileName = kernel_type+"_"+System.nanoTime();
-//    	
-//		String uploadedFileLocation = "./" + inputFileName;
-// 
-//		// save the file
-//		if(!writeToFile(uploadedInputStream, uploadedFileLocation) ) {
-//			System.out.println("\n\nError... could not write file");
-////			return Response.status(400).entity("Error").build();
-//			return "Error";
-//		}
-//		
-//		try {
-//    		String line = "";
-//	    	Process pr = Runtime.getRuntime().exec("Rscript svmTraining.R "+ inputFileName + " " + kernel_type + " " + modelName);
-//			System.out.println("Model created!!");
-//			BufferedReader results = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-//			String out=null;
-//			while((out=results.readLine()) != null) {
-//				System.out.println(line);
-//			}  
-//    	} catch (Exception e) {
-//    		e.printStackTrace();
-////    		return Response.status(400).entity(e.getMessage()).build();
-//    		return e.getMessage();
-//    	}
-//		
-//		return "success" ;
-////				Response.status(200).entity(inputFileName).build();
-// 
-//	}
     
     
     // save uploaded file to new location

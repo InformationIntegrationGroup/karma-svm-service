@@ -18,4 +18,8 @@
         <servlet-name>Data Mining Services</servlet-name>
         <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
+    <init-param>
+        <param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
+        <param-value>com.sun.jersey.api.container.filter.LoggingFilter;com.az.jersey.server.AuthFilter</param-value>
+    </init-param>
 </web-app>
