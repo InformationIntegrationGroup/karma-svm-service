@@ -28,7 +28,7 @@ write.table(testset, predictedFileName, sep=',', quote=TRUE)
 
 #plot(svm.pred)
 
-write.table(confusionMatrix,file=confusionMatrixFile,sep='\t')
+write.table(confusionMatrix,file=confusionMatrixFile, sep=',' , col.names=NA)
 
 accuracy <- paste("Accuracy: ",classAgreement(confusionMatrix)$diag,sep=" ")
 accuracy
