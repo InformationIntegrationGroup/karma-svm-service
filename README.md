@@ -37,10 +37,10 @@ The root directory contains the following:
 
 ## Using the Webservice ##
 
-### /dm-service/service ###
+### /dm-service/api/service ###
 This endpoint serves meta information about all the available services.
 ```
-http://localhost/dm-service/service/all
+http://localhost:8080/dm-service/api/service/all
 ```
 The /all will fetch a list of all the available services along with their parameters
 ```
@@ -90,13 +90,13 @@ The /all will fetch a list of all the available services along with their parame
 }
 ```
 
-### /dm-service/service/execution ###
+### /dm-service/api/service/execution ###
 This endpoint serves meta information about all the executions of the data mining service that have been performed so far.
 It show a log of all the calls made so far, with the various paramteres.
 ```
-http://localhost/dm-service/service/execution
+http://localhost:8080/dm-service/api/service/execution
 or 
-http://localhost/dm-service/service/execution/{model_name},
+http://localhost:8080/dm-service/api/service/execution/{model_name},
 ```
 If a model_name is specific, then all the infomration about this trained model is fetched. Else all models are fetched.
 ````
@@ -125,6 +125,33 @@ If a model_name is specific, then all the infomration about this trained model i
     "ModelName": "SVM_Model_linear_04-Apr-2014_133322130"
 }
 ````
+
+### /dm-service/api/svm/train ###
+This is the SVM training service. You can fetch the list of paramteers it takes, viewing the service/all.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/svm/train
+```
+
+### /dm-service/api/svm/test?mode_name={the svm model name} ###
+This is the SVM testing service. You can fetch the list of paramteers it takes, viewing the service/all.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/svm/test?model_name=test_mode134.RData
+```
+
+
+### /dm-service/api/data/csv/{file_name} ###
+This GET service, downloads the dataset file that was uploaded to the server
+```
+http://localhost:8080/dm-service/api/data/csv/{file_name}
+```
+
+### /dm-service/api/data/csv ###
+This GET service, fetches the list of all the datafile names
+```
+http://localhost:8080/dm-service/api/data/csv
+```
 
 
 
