@@ -139,7 +139,7 @@ public class Util {
 			if(name == null || name.trim().isEmpty()) {
 				stmt = conn.prepareStatement("select distinct * from service_executions order by createdOn, Id desc");
 			} else {
-				stmt = conn.prepareStatement("select distinct * from service_executions where Key = 'model_name' and Value like ? order by createdOn, Id desc");
+				stmt = conn.prepareStatement("select  * from service_executions where Id = (select Id from service_executions where Key = 'model_name' and Value like ? ) order by createdOn, Id desc");
 				stmt.setString(1, name);
 			}
 			ResultSet rs = stmt.executeQuery();
@@ -147,20 +147,19 @@ public class Util {
 			JSONObject obj = new JSONObject();
 			String prevModel = "";
 			while(rs.next()) {
+				log.info(rs.getString(ModelKeys.Id.name()));
 				if(!prevModel.equalsIgnoreCase(rs.getString(ModelKeys.Id.name()))) {
 					prevModel = rs.getString(ModelKeys.Id.name());
 					arr.put(obj);
 					obj = new JSONObject();
-					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
-				} else {
-					
 					obj.put(ModelKeys.ServiceUrl.name(), rs.getString(ModelKeys.ServiceUrl.name()));
 					obj.put(ModelKeys.Id.name(), rs.getString(ModelKeys.Id.name()));
 					obj.put(ModelKeys.Tag.name(), rs.getString(ModelKeys.Tag.name()));
 					obj.put(ModelKeys.createdOn.name(), rs.getString(ModelKeys.createdOn.name()));
-					
 					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 					
+				} else {
+					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 				}
 			}
 			arr.put(obj);

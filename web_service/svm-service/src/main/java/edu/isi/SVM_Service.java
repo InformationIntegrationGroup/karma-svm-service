@@ -81,7 +81,7 @@ public class SVM_Service {
     		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
-    	
+    	log.info(this.uriInfo.getPath());
     	return Response.status(200).entity("The SVM training service is invoked using a POST request. It accepts data in the POST payload").build();
     
     }
@@ -98,7 +98,7 @@ public class SVM_Service {
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
-    	log.debug(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
+    	log.info(this.uriInfo.getPath());
     	
     	// get the date format for file name generation
     	SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy_HmsS");
@@ -207,7 +207,7 @@ public class SVM_Service {
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
-    	log.info(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
+    	log.info(this.uriInfo.getPath());
     	return Response.status(200).entity("Got here").build();
     
     }
@@ -222,7 +222,7 @@ public class SVM_Service {
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
-    	log.info(String.format("%s", headers.getRequestHeader("User-Agent")));
+    	log.info(this.uriInfo.getPath());
     	
     	
     	// get the date format for file name generation
@@ -304,7 +304,7 @@ public class SVM_Service {
 				summary.put("ConfusionMatrixFileName", confusionMatrixFileName);
 				summary.put("PredictionFileName", predictedFileName);
 				summary.put("InputFileName", inputFileName);
-				summary.put("CommandName", "Rscripts/svmTraining.R");
+				summary.put("CommandName", "Rscripts/svmTesting.R");
 				utilObj.insertExecutionInfo(UUID.randomUUID().toString(), this.uriInfo.getPath(), tag_name, summary);
 				
 				// now add the urls to the get matrix and prediction file

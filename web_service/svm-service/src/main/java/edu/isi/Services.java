@@ -36,8 +36,8 @@ public class Services {
     		@Context HttpHeaders headers,
     		@PathParam("model_name") String model_name) {
     	
-    	log.debug(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
-    	JSONObject json = utilObj.getAllExecution(model_name);
+    	log.info(this.uriInfo.getPath());
+    	JSONObject json = utilObj.getAllExecution(model_name.trim());
     	return Response.status(200).entity(json.toString()).build();
     }
     @GET
@@ -46,7 +46,7 @@ public class Services {
     public Response getExecutions(
     		@Context HttpHeaders headers) {
     	
-    	log.debug(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
+    	log.info(this.uriInfo.getPath());
     	JSONObject json = utilObj.getAllExecution();
     	return Response.status(200).entity(json.toString()).build();
     }
@@ -60,7 +60,7 @@ public class Services {
     		@Context HttpHeaders headers,
     		@DefaultValue("") @QueryParam("model_name") String model_name) {
     	
-    	log.info(String.format("%s %s", headers.getRequestHeader("Host"), headers.getRequestHeader("User-Agent")));
+    	log.info(this.uriInfo.getPath());
     	JSONObject json = utilObj.getAllServices(this.uriInfo);
     	return Response.status(200).entity(json.toString()).build();
     }
