@@ -15,10 +15,10 @@ y<-testset[,numOfcol]
 
 svm.pred <- predict(svmModel, x)
 
-testset['predicted'] <- fitted(svmModel)
-#testset[1:8,]
+testset['predicted'] <- svm.pred
 
-confusionMatrix <- table(fitted(svmModel), y)
+
+confusionMatrix <- table(svm.pred, y)
 pred <- predict(svmModel, x, decision.values = TRUE)
 
 #summary(svmModel)
