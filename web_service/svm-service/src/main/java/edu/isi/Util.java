@@ -95,6 +95,15 @@ public class Util {
 				statement.setString(2, ServiceUrl);
 				statement.setString(3, tagName);
 				statement.setString(4, k);
+				val = json.optString(k, null);
+//				if(val == null) {
+//					JSONArray ar = json.optJSONArray(k);
+//					if(ar == null) {
+//						val = json.getJSONObject(k).toString();
+//					} else {
+//						val = ar.toString();
+//					}
+//				}
 				try {
 					val = json.getString(k);
 				} catch (Exception e) {
@@ -144,6 +153,7 @@ public class Util {
 			}
 			ResultSet rs = stmt.executeQuery();
 			JSONArray arr = new JSONArray();
+			JSONArray attrs = new JSONArray();
 			JSONObject obj = new JSONObject();
 			String prevModel = "";
 			while(rs.next()) {
@@ -152,14 +162,26 @@ public class Util {
 					prevModel = rs.getString(ModelKeys.Id.name());
 					arr.put(obj);
 					obj = new JSONObject();
+					attrs = new JSONArray();
 					obj.put(ModelKeys.ServiceUrl.name(), rs.getString(ModelKeys.ServiceUrl.name()));
 					obj.put(ModelKeys.Id.name(), rs.getString(ModelKeys.Id.name()));
 					obj.put(ModelKeys.Tag.name(), rs.getString(ModelKeys.Tag.name()));
 					obj.put(ModelKeys.createdOn.name(), rs.getString(ModelKeys.createdOn.name()));
-					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
+					
+					JSONObject row = new JSONObject();
+					row.put("attribute", rs.getString(ModelKeys.Key.name()));
+					row.put("value", rs.getString(ModelKeys.Value.name()));
+					attrs.put(row);					
+					obj.put("summary", attrs);
+					
 					
 				} else {
-					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
+					JSONObject row = new JSONObject();
+					row.put("attribute", rs.getString(ModelKeys.Key.name()));
+					row.put("value", rs.getString(ModelKeys.Value.name()));
+					obj.getJSONArray("summary").put(row);
+					
+//					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 				}
 			}
 			arr.put(obj);
