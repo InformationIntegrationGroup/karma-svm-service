@@ -258,19 +258,22 @@ public class SVM_Service {
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
+    	if(model_name.isEmpty()) {
+    		return Response.status(500).entity("Missing model name. /test/{model_name}").build();
+    	}
     	log.info(this.uriInfo.getPath());
     	return Response.status(200).entity("Got here").build();
     
     }
     
     @POST
-	@Path("/test")
+	@Path("/test/{model_name}")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
     public Response testingPOST(
     		String data,
     		@Context HttpHeaders headers,
-    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@PathParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
     	log.info(this.uriInfo.getPath());
@@ -364,6 +367,17 @@ public class SVM_Service {
 				summary.put("TestFilePath", this.uriInfo.getBaseUri().toString()+"data/csv/"+inputFileName);
 				
 			}
+			
+			// format the summary json as params { [key : val] }
+			JSONArray finalSummary = new JSONArray();
+			Iterator<String> keys =  summary.keySet().iterator();
+			while(keys.hasNext()) {
+				JSONObject row = new JSONObject();
+				row.put("attribute", keys.next());
+				row.put("value", summary.get(row.getString("attribute")));
+				finalSummary.put(row);
+			}
+			return Response.status(200).entity(new JSONObject().put("summary", finalSummary).toString()).build();
 			
     	} catch (Exception e) {
     		e.printStackTrace();
