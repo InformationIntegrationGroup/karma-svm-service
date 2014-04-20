@@ -345,7 +345,7 @@ public class SVM_Service {
 					continue;
 				}
 				if(line.trim().contains("Accuracy:")) {
-					summary.put("Accuracy", line);
+					summary.put("Accuracy", line.substring(line.indexOf(':')+1));
 				} 
 			}
 			summary.put("raw", buf.toString());			// add the output of the rscript to the json
@@ -369,20 +369,26 @@ public class SVM_Service {
 			}
 			
 			// format the summary json as params { [key : val] }
-			JSONArray finalSummary = new JSONArray();
+			JSONArray attrs = new JSONArray();
 			Iterator<String> keys =  summary.keySet().iterator();
 			while(keys.hasNext()) {
 				JSONObject row = new JSONObject();
 				row.put("attribute", keys.next());
 				row.put("value", summary.get(row.getString("attribute")));
-				finalSummary.put(row);
+				attrs.put(row);
 			}
+			JSONObject finalSummary = new JSONObject();
+			finalSummary.put("confusionMatrix", this.utilObj.parseConfusionMatrix(confusionMatrixFilePath));
+			finalSummary.put("attributes", attrs);
+			finalSummary.put("prediction", this.utilObj.csv2json(predictedFilePath));
+			
 			return Response.status(200).entity(new JSONObject().put("summary", finalSummary).toString()).build();
 			
     	} catch (Exception e) {
+    		summary = new JSONObject();
+    		summary.put("Error", e.getMessage());
     		e.printStackTrace();
     	}
-		
     	return Response.status(200).entity(summary.toString()).build();
 	}
     
