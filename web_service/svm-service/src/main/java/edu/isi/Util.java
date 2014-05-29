@@ -1,6 +1,8 @@
 package edu.isi;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -15,6 +17,10 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvParser;
 
 /**
  * @author shri
@@ -95,6 +101,15 @@ public class Util {
 				statement.setString(2, ServiceUrl);
 				statement.setString(3, tagName);
 				statement.setString(4, k);
+				val = json.optString(k, null);
+//				if(val == null) {
+//					JSONArray ar = json.optJSONArray(k);
+//					if(ar == null) {
+//						val = json.getJSONObject(k).toString();
+//					} else {
+//						val = ar.toString();
+//					}
+//				}
 				try {
 					val = json.getString(k);
 				} catch (Exception e) {
@@ -144,6 +159,7 @@ public class Util {
 			}
 			ResultSet rs = stmt.executeQuery();
 			JSONArray arr = new JSONArray();
+			JSONArray attrs = new JSONArray();
 			JSONObject obj = new JSONObject();
 			String prevModel = "";
 			while(rs.next()) {
@@ -152,14 +168,26 @@ public class Util {
 					prevModel = rs.getString(ModelKeys.Id.name());
 					arr.put(obj);
 					obj = new JSONObject();
+					attrs = new JSONArray();
 					obj.put(ModelKeys.ServiceUrl.name(), rs.getString(ModelKeys.ServiceUrl.name()));
 					obj.put(ModelKeys.Id.name(), rs.getString(ModelKeys.Id.name()));
 					obj.put(ModelKeys.Tag.name(), rs.getString(ModelKeys.Tag.name()));
 					obj.put(ModelKeys.createdOn.name(), rs.getString(ModelKeys.createdOn.name()));
-					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
+					
+					JSONObject row = new JSONObject();
+					row.put("attribute", rs.getString(ModelKeys.Key.name()));
+					row.put("value", rs.getString(ModelKeys.Value.name()));
+					attrs.put(row);					
+					obj.put("summary", attrs);
+					
 					
 				} else {
-					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
+					JSONObject row = new JSONObject();
+					row.put("attribute", rs.getString(ModelKeys.Key.name()));
+					row.put("value", rs.getString(ModelKeys.Value.name()));
+					obj.getJSONArray("summary").put(row);
+					
+//					obj.put(rs.getString(ModelKeys.Key.name()), rs.getString(ModelKeys.Value.name()));
 				}
 			}
 			arr.put(obj);
@@ -211,5 +239,98 @@ public class Util {
 		}
 		return retVal;
 		
+	}
+	
+	
+	public JSONArray parseConfusionMatrix(String pathToCsvFile) {
+		ArrayList<JSONObject> retVal = new ArrayList<JSONObject>();
+		
+		CsvMapper mapper = new CsvMapper();
+		mapper.enable(CsvParser.Feature.WRAP_AS_ARRAY);
+		File csvFile = new File(pathToCsvFile);
+		if(!csvFile.exists()) {
+			JSONObject err = new JSONObject();
+			log.error("Could not locate confusion matrix file : " + pathToCsvFile);
+			err.put("Error", "Could not locate/generate csv file : ");
+			return  new JSONArray().put(err);
+		}
+		try {
+			MappingIterator<Object[]> it = mapper.reader(Object[].class).readValues(csvFile);
+			// get the headers first
+			ArrayList<String> headers = new ArrayList<String>();
+			JSONObject data = new JSONObject();
+			if(it.hasNext()) {
+				Object[] row = it.next();
+				for(Object o : row) {
+					String val = o.toString().trim();
+					if(val.isEmpty()) {
+						headers.add("class");
+					} else {
+						headers.add(val);
+					}
+				}
+			}
+			// get the data
+			while (it.hasNext()) {
+			  Object[] row = it.next();
+			  data = new JSONObject();
+			  int idx = 0;
+			  for(Object o : row) {
+				  data.put(headers.get(idx), o);
+				  idx++;
+			  }
+			  retVal.add(data);			  
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return new JSONArray(retVal);
+	}
+	
+	
+	
+	public JSONArray csv2json(String pathToCsvFile) {
+		ArrayList<JSONObject> retVal = new ArrayList<JSONObject>();
+		
+		CsvMapper mapper = new CsvMapper();
+		mapper.enable(CsvParser.Feature.WRAP_AS_ARRAY);
+		File csvFile = new File(pathToCsvFile);
+		if(!csvFile.exists()) {
+			JSONObject err = new JSONObject();
+			log.error("Could not locate csv file : " + pathToCsvFile);
+			err.put("Error", "Could not locate/generate csv file : ");
+			return  new JSONArray().put(err);
+		}
+		try {
+			MappingIterator<Object[]> it = mapper.reader(Object[].class).readValues(csvFile);
+			// get the headers first
+			ArrayList<String> headers = new ArrayList<String>();
+			JSONObject data = new JSONObject();
+			if(it.hasNext()) {
+				Object[] row = it.next();
+				for(Object o : row) {
+					String val = o.toString().trim();
+					headers.add(val);
+				}
+			}
+			// get the data
+			while (it.hasNext()) {
+			  Object[] row = it.next();
+			  data = new JSONObject();
+			  int idx = 0;
+			  for(Object o : row) {
+				  try {
+					  data.put(headers.get(idx), o);
+				  } catch (Exception e1) {
+					  log.error(e1.getMessage());
+				  }
+				  idx++;
+			  }
+			  retVal.add(data);			  
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return new JSONArray(retVal);
 	}
 }

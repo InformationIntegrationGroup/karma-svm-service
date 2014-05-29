@@ -19,6 +19,7 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -31,6 +32,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.server.ServerConfig;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 @Path("svm")
@@ -72,6 +74,21 @@ public class SVM_Service {
     
     
     @GET
+	@Path("/train/{model_name}")
+	@Produces(MediaType.TEXT_PLAIN)
+    public Response trainingGETwithModel(
+    		String data,
+    		@Context HttpHeaders headers,
+    		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
+    		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
+    		@PathParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
+    	log.info(this.uriInfo.getPath());
+    	return Response.status(200).entity("The SVM training service is invoked using a POST request. It accepts data in the POST payload").build();
+    
+    }
+    
+    @GET
 	@Path("/train")
 	@Produces(MediaType.TEXT_PLAIN)
     public Response trainingGET(
@@ -79,12 +96,39 @@ public class SVM_Service {
     		@Context HttpHeaders headers,
     		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
     		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
-    		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	log.info(this.uriInfo.getPath());
     	return Response.status(200).entity("The SVM training service is invoked using a POST request. It accepts data in the POST payload").build();
     
     }
+    
+    
+    @POST
+	@Path("/train/{model_name}")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_JSON)
+    public Response trainingPOSTwithModel(
+    		String data,
+    		@Context HttpHeaders headers,
+    		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
+    		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
+    		@PathParam("model_name") String model_name,
+    		@DefaultValue("") @QueryParam("tag") String tag_name) {
+    	
+    	log.info(this.uriInfo.getPath());
+    	
+    	JSONObject summary = new JSONObject();
+    	
+    	// check if the model name is already present
+    	if(utilObj.isModelNameUnique(model_name)) {
+    		summary = new JSONObject();
+    		summary.put("Error", "Duplicate model name : " + model_name);
+    		log.error("Duplicate model name");
+    		return Response.status(200).entity(summary.toString()).build();
+    	}
+    	
+    	return Response.status(200).entity(performSVM(data, kernel_type, c_type, model_name, tag_name).toString()).build();
+	}
     
     @POST
 	@Path("/train")
@@ -95,14 +139,18 @@ public class SVM_Service {
     		@Context HttpHeaders headers,
     		@DefaultValue("linear") @QueryParam("kernel_type") String kernel_type, 
     		@DefaultValue("C-classification") @QueryParam("c-type") String c_type,
-    		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
     	log.info(this.uriInfo.getPath());
     	
-    	// get the date format for file name generation
-    	SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy_HmsS");
+    	return Response.status(200).entity(performSVM(data, kernel_type, c_type, "", tag_name).toString()).build();
+	}
+    
+    
+    private JSONObject performSVM(String data, String kernel_type, String c_type, String model_name, String tag_name) {
+    	
     	JSONObject summary = new JSONObject();
+    	SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy_HmsS");
     	
     	kernel_type = kernel_type.trim().toLowerCase();
     	if(c_type.trim().length()< 1) {
@@ -115,13 +163,7 @@ public class SVM_Service {
     		model_name = "SVM_Model_" + kernel_type + "_" + sdf.format(Calendar.getInstance().getTime());
     	}
     	
-    	// check if the model name is already present
-    	if(utilObj.isModelNameUnique(model_name)) {
-    		summary = new JSONObject();
-    		summary.put("Error", "Duplicate model name : " + model_name);
-    		log.error("Duplicate model name");
-    		return Response.status(200).entity(summary.toString()).build();
-    	}
+    	final String inputFileName = "TrainData_" + kernel_type + "_" + sdf.format(Calendar.getInstance().getTime()) + ".csv";
     	
     	log.info(String.format("kernel: %s Classification: %s, model_Name: %s", kernel_type, c_type, model_name ));
     	String modelFilePath = Util.CurrentDir+"/models/"+model_name;
@@ -129,7 +171,7 @@ public class SVM_Service {
     	try {
 
     		// write the data to the disk
-    		final String inputFileName = "TrainData_" + kernel_type + "_" + sdf.format(Calendar.getInstance().getTime()) + ".csv";
+    		
     		final String inputFilePath = Util.CurrentDir+"/"+Util.DataDir+"/"+inputFileName;
     		FileWriter writer = new FileWriter(inputFilePath);
     		writer.write(data);
@@ -189,13 +231,22 @@ public class SVM_Service {
 				utilObj.insertExecutionInfo(UUID.randomUUID().toString(), this.uriInfo.getPath(), tag_name, summary);
 				summary.put("InputFilePath", this.uriInfo.getBaseUri() + "data/csv/" + inputFileName);
 			}
+			// format the summary json as params { [key : val] }
+			JSONArray finalSummary = new JSONArray();
+			Iterator<String> keys =  summary.keySet().iterator();
+			while(keys.hasNext()) {
+				JSONObject row = new JSONObject();
+				row.put("attribute", keys.next());
+				row.put("value", summary.get(row.getString("attribute")));
+				finalSummary.put(row);
+			}
+			return new JSONObject().put("summary", finalSummary);
 			
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
-		
-    	return Response.status(200).entity(summary.toString()).build();
-	}
+    	return new JSONObject();
+    }
     
     
     @GET
@@ -207,19 +258,22 @@ public class SVM_Service {
     		@DefaultValue("") @QueryParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
+    	if(model_name.isEmpty()) {
+    		return Response.status(500).entity("Missing model name. /test/{model_name}").build();
+    	}
     	log.info(this.uriInfo.getPath());
     	return Response.status(200).entity("Got here").build();
     
     }
     
     @POST
-	@Path("/test")
+	@Path("/test/{model_name}")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
     public Response testingPOST(
     		String data,
     		@Context HttpHeaders headers,
-    		@DefaultValue("") @QueryParam("model_name") String model_name,
+    		@PathParam("model_name") String model_name,
     		@DefaultValue("") @QueryParam("tag") String tag_name) {
     	
     	log.info(this.uriInfo.getPath());
@@ -291,7 +345,7 @@ public class SVM_Service {
 					continue;
 				}
 				if(line.trim().contains("Accuracy:")) {
-					summary.put("Accuracy", line);
+					summary.put("Accuracy", line.substring(line.indexOf(':')+1));
 				} 
 			}
 			summary.put("raw", buf.toString());			// add the output of the rscript to the json
@@ -314,10 +368,27 @@ public class SVM_Service {
 				
 			}
 			
+			// format the summary json as params { [key : val] }
+			JSONArray attrs = new JSONArray();
+			Iterator<String> keys =  summary.keySet().iterator();
+			while(keys.hasNext()) {
+				JSONObject row = new JSONObject();
+				row.put("attribute", keys.next());
+				row.put("value", summary.get(row.getString("attribute")));
+				attrs.put(row);
+			}
+			JSONObject finalSummary = new JSONObject();
+			finalSummary.put("confusionMatrix", this.utilObj.parseConfusionMatrix(confusionMatrixFilePath));
+			finalSummary.put("attributes", attrs);
+			finalSummary.put("prediction", this.utilObj.csv2json(predictedFilePath));
+			
+			return Response.status(200).entity(new JSONObject().put("summary", finalSummary).toString()).build();
+			
     	} catch (Exception e) {
+    		summary = new JSONObject();
+    		summary.put("Error", e.getMessage());
     		e.printStackTrace();
     	}
-		
     	return Response.status(200).entity(summary.toString()).build();
 	}
     

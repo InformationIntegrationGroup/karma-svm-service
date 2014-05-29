@@ -64,5 +64,17 @@ public class Services {
     	JSONObject json = utilObj.getAllServices(this.uriInfo);
     	return Response.status(200).entity(json.toString()).build();
     }
+    
+    @GET
+    @Path("/testCSV")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response testCSV(
+    		@Context HttpHeaders headers) {
+    	
+    	log.info(this.uriInfo.getPath());
+    	return Response.status(200).entity(this.utilObj.parseConfusionMatrix(Util.CurrentDir + "/temp_data_dm_service/Matrix_SVM_Model_linear_06-Apr-2014_235517756.csv").toString()).build();
+    }
+    
+    
 
 }
