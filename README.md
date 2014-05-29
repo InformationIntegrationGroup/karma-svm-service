@@ -33,6 +33,11 @@ http://localhost:8080/dm-service/api/service/all
 #### Installing R
 Follow the R installation steps [http://cran.r-project.org/doc/manuals/r-release/R-admin.html] (http://cran.r-project.org/doc/manuals/r-release/R-admin.html)
 
+After installing R, you need to install additioanl packages:
+1. [e1071 - for svm] (http://cran.r-project.org/web/packages/e1071/index.html)
+2. [PMML] (http://cran.r-project.org/web/packages/pmml/index.html)
+
+
 ## Source Code Directories ##
 The root directory contains the following:
 
