@@ -138,6 +138,8 @@ If a model_name is specific, then all the infomration about this trained model i
 }
 ````
 
+## SVM Service
+
 ### /dm-service/api/svm/train ###
 This is the SVM training service. You can fetch the list of paramteers it takes, viewing the service/all.
 The POST payload must contain a csv dataset.
@@ -152,6 +154,23 @@ The POST payload must contain a csv dataset.
 http://localhost:8080/dm-service/api/svm/test/test_mode134.RData
 ```
 
+## Decision Tree Service
+
+### /dm-service/api/dtree/train ###
+This is the Decision tree training service.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/dtree/train
+```
+
+### /dm-service/api/dtree/test/{the decision tree model name} ###
+This is the Decision tree testing service.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/dtree/test/test_mode134.RData
+```
+
+## Meta services
 
 ### /dm-service/api/data/csv/{file_name} ###
 This GET service, downloads the dataset file that was uploaded to the server
