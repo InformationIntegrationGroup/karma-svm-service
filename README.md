@@ -5,7 +5,7 @@ Karma DataMining Service
 This project is a rest based implementation for various machine learning services like SVM, Decision Trees, etc. The machine learning services are implmented in R and the webservice is implemented using Jersey framework in java.
 
 ## Installation and Setup ##
-System Requirements: **Java 1.6, Maven 3.0** and above.
+System Requirements: **Java 1.6, Maven 3.0, R (statistical tool)** and above.
 
 To compile the code run this from the folder of web_service/svm-service/
 ```
@@ -19,13 +19,25 @@ cp web_service/svm-service/target/dm-service.war /location/of/the/tomcat/webapps
 ```
 Copy the Rscript directory to the same level/location as webapps
 ```
-cp -r Rscripts/ /location/of/the/tomcat/
+cp -r Rscripts /location/of/the/tomcat/
 ```
-Copy the sqlite database file to the same location as webapps
+Copy the sqlite database file to the same location as webapps. 
 ```
 cp services_db.sqlite /location/of/the/tomcat/
 ```
-Now start the server. Once the server has started (assuming port 8080 ) point your browser to **http://localhost:8080/dm-service.
+Now start the server. Once the server has started (assuming port 8080) point your browser to below url and you should recieve a json showing all the serivices that are available. 
+```
+http://localhost:8080/dm-service/api/service/all
+```
+
+#### Installing R
+Follow the R installation steps [http://cran.r-project.org/doc/manuals/r-release/R-admin.html] (http://cran.r-project.org/doc/manuals/r-release/R-admin.html)
+
+After installing R, you need to install additional packages:
+
+1. [e1071 - for svm] (http://cran.r-project.org/web/packages/e1071/index.html)
+2. [PMML] (http://cran.r-project.org/web/packages/pmml/index.html)
+
 
 ## Source Code Directories ##
 The root directory contains the following:
@@ -126,6 +138,8 @@ If a model_name is specific, then all the infomration about this trained model i
 }
 ````
 
+## SVM Service
+
 ### /dm-service/api/svm/train ###
 This is the SVM training service. You can fetch the list of paramteers it takes, viewing the service/all.
 The POST payload must contain a csv dataset.
@@ -133,13 +147,30 @@ The POST payload must contain a csv dataset.
 http://localhost:8080/dm-service/api/svm/train
 ```
 
-### /dm-service/api/svm/test?mode_name={the svm model name} ###
+### /dm-service/api/svm/test/{the svm model name} ###
 This is the SVM testing service. You can fetch the list of paramteers it takes, viewing the service/all.
 The POST payload must contain a csv dataset.
 ```
-http://localhost:8080/dm-service/api/svm/test?model_name=test_mode134.RData
+http://localhost:8080/dm-service/api/svm/test/test_mode134.RData
 ```
 
+## Decision Tree Service
+
+### /dm-service/api/dtree/train ###
+This is the Decision tree training service.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/dtree/train
+```
+
+### /dm-service/api/dtree/test/{the decision tree model name} ###
+This is the Decision tree testing service.
+The POST payload must contain a csv dataset.
+```
+http://localhost:8080/dm-service/api/dtree/test/test_mode134.RData
+```
+
+## Meta services
 
 ### /dm-service/api/data/csv/{file_name} ###
 This GET service, downloads the dataset file that was uploaded to the server
